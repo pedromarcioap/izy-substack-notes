@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Substack Notes Composer",
+  "version": "1.0.0",
+  "description": "Publique Notes no Substack diretamente do seu navegador.",
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "Criar Note"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://substack.com/*"
+  ],
+  "icons": {
+    "16": "https://picsum.photos/16/16",
+    "48": "https://picsum.photos/48/48",
+    "128": "https://picsum.photos/128/128"
+  }
+}

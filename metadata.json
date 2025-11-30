@@ -1,0 +1,5 @@
+{
+  "name": "Substack Notes Poster Extension",
+  "description": "A Chrome Extension to compose and post Notes directly to Substack with support for scheduling.",
+  "requestFramePermissions": []
+}
