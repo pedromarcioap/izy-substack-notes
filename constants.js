@@ -8,7 +8,12 @@ export const DEFAULT_PAYLOAD_CONFIG = {
 
 // Helper to generate dynamic URL based on subdomain
 export function getApiUrl(subdomain, type) {
+  // NOTES são sempre globais no substack.com
+  if (type === 'note') {
+    return 'https://substack.com/api/v1/notes';
+  }
+  
+  // POSTS são específicos da publicação (subdomínio)
   const domain = subdomain ? `${subdomain}.substack.com` : 'substack.com';
-  const endpoint = type === 'note' ? 'notes' : 'posts';
-  return `https://${domain}/api/v1/${endpoint}`;
+  return `https://${domain}/api/v1/posts`;
 }
