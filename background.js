@@ -1,22 +1,24 @@
 // background.js - Service Worker for Manifest V3
-import { SUBSTACK_API_URL, SUBSTACK_POSTS_URL } from './constants.js';
 
 chrome.runtime.onInstalled.addListener(() => {
   console.log('Substack Notes Composer Extension installed successfully.');
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.type === 'PUBLISH_NOTE') {
-    handleRequest(SUBSTACK_API_URL, request.payload)
+  if (request.type === 'PUBLISH_NOTE' || request.type === 'PUBLISH_POST') {
+    // Use the URL provided in the request (constructed by popup.js based on subdomain)
+    // Fallback logic handled in popup, but validating here is good practice.
+    const url = request.url; 
+    
+    if (!url) {
+      sendResponse({ success: false, error: "URL da API inválida." });
+      return true;
+    }
+
+    handleRequest(url, request.payload)
       .then(response => sendResponse(response))
       .catch(error => sendResponse({ success: false, error: error.message }));
-    return true; // Async response
-  }
-  
-  if (request.type === 'PUBLISH_POST') {
-    handleRequest(SUBSTACK_POSTS_URL, request.payload)
-      .then(response => sendResponse(response))
-      .catch(error => sendResponse({ success: false, error: error.message }));
+    
     return true; // Async response
   }
 });
@@ -28,7 +30,7 @@ async function handleRequest(url, payload) {
       headers: {
         'Content-Type': 'application/json',
       },
-      credentials: 'include', // Sends Substack cookies
+      credentials: 'include', // Sends Substack cookies automatically
       body: JSON.stringify(payload),
     });
 

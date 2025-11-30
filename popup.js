@@ -1,10 +1,11 @@
-import { DEFAULT_PAYLOAD_CONFIG, SUBSTACK_LOGIN_URL } from './constants.js';
+import { DEFAULT_PAYLOAD_CONFIG, SUBSTACK_LOGIN_URL, getApiUrl } from './constants.js';
 
 // State
 let state = {
   activeTab: 'note', // 'note' or 'post'
   text: '',
   title: '',
+  subdomain: '',
   scheduledDate: '',
   isSchedulerVisible: false,
   isLoading: false
@@ -12,6 +13,7 @@ let state = {
 
 // DOM Elements
 const elements = {
+  subdomainInput: document.getElementById('subdomain-input'),
   tabNote: document.getElementById('tab-note'),
   tabPost: document.getElementById('tab-post'),
   contentText: document.getElementById('content-text'),
@@ -29,13 +31,33 @@ const elements = {
 // --- Initialization ---
 
 document.addEventListener('DOMContentLoaded', () => {
+  loadSettings();
   setupEventListeners();
   updateUI();
 });
 
+function loadSettings() {
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+    chrome.storage.local.get(['subdomain'], (result) => {
+      if (result.subdomain) {
+        state.subdomain = result.subdomain;
+        elements.subdomainInput.value = result.subdomain;
+      }
+    });
+  }
+}
+
 // --- Event Listeners ---
 
 function setupEventListeners() {
+  // Subdomain
+  elements.subdomainInput.addEventListener('input', (e) => {
+    state.subdomain = e.target.value.trim();
+    if (typeof chrome !== 'undefined' && chrome.storage) {
+      chrome.storage.local.set({ subdomain: state.subdomain });
+    }
+  });
+
   // Tabs
   elements.tabNote.addEventListener('click', () => switchTab('note'));
   elements.tabPost.addEventListener('click', () => switchTab('post'));
@@ -166,6 +188,9 @@ async function handlePublish() {
   hideMessage();
   updateUI();
 
+  // Construct dynamic URL
+  const targetUrl = getApiUrl(state.subdomain, state.activeTab);
+  
   const proseMirrorBody = createProseMirrorDoc(state.text);
   let messageType = '';
   let payload = {};
@@ -192,7 +217,11 @@ async function handlePublish() {
 
   // Check if Chrome runtime is available
   if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-    chrome.runtime.sendMessage({ type: messageType, payload }, (response) => {
+    chrome.runtime.sendMessage({ 
+      type: messageType, 
+      payload,
+      url: targetUrl // Pass dynamic URL to background
+    }, (response) => {
       state.isLoading = false;
       
       if (chrome.runtime.lastError) {
@@ -206,13 +235,19 @@ async function handlePublish() {
         resetForm();
       } else {
         const msg = response?.message || response?.error || "Erro desconhecido.";
-        showMessage('error', response?.status === 401 ? "Sessão expirada. Faça login no Substack." : msg);
+        if (response?.status === 404) {
+             showMessage('error', `Erro 404: Verifique se o subdomínio "${state.subdomain || 'www'}" está correto.`);
+        } else if (response?.status === 401) {
+             showMessage('error', "Não autorizado. Faça login no Substack.");
+        } else {
+            showMessage('error', msg);
+        }
       }
       updateUI();
     });
   } else {
     // Dev fallback
-    console.warn('Chrome runtime not found. Simulated request:', messageType, payload);
+    console.warn('Chrome runtime not found. Simulated request to:', targetUrl, payload);
     setTimeout(() => {
       state.isLoading = false;
       showMessage('success', 'Simulação: Sucesso!');

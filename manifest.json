@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Substack Notes Composer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Publique Notes e Rascunhos no Substack diretamente do seu navegador.",
   "action": {
     "default_popup": "popup.html",
@@ -16,6 +16,6 @@
     "storage"
   ],
   "host_permissions": [
-    "https://substack.com/*"
+    "*://*.substack.com/*"
   ]
 }
