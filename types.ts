@@ -18,7 +18,7 @@ export interface ProseMirrorDoc {
   content: ProseMirrorParagraph[];
 }
 
-// Substack API Payload Interface
+// Substack API Payload Interface (NOTES)
 export interface SubstackNotePayload {
   bodyJson: ProseMirrorDoc;
   tabId: string;
@@ -26,6 +26,14 @@ export interface SubstackNotePayload {
   replyMinimumRole: string;
   scheduled_at?: string; // Optional field for scheduling
   draft?: boolean;
+}
+
+// Substack API Payload Interface (POSTS / DRAFTS)
+export interface SubstackPostPayload {
+  title: string;
+  body_json: ProseMirrorDoc; // Note: API often uses snake_case for posts
+  draft: boolean;
+  audience: string;
 }
 
 export enum RequestStatus {
@@ -36,12 +44,11 @@ export enum RequestStatus {
 }
 
 // Message Passing Interfaces
-export interface PublishNoteMessage {
-  type: 'PUBLISH_NOTE';
-  payload: SubstackNotePayload;
-}
+export type ExtensionMessage = 
+  | { type: 'PUBLISH_NOTE'; payload: SubstackNotePayload }
+  | { type: 'PUBLISH_POST'; payload: SubstackPostPayload };
 
-export interface PublishNoteResponse {
+export interface PublishResponse {
   success: boolean;
   data?: any;
   error?: string;

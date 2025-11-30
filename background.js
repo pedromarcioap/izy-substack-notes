@@ -1,50 +1,39 @@
-// background.ts - Service Worker for Manifest V3
-import { SUBSTACK_API_URL, SUBSTACK_POSTS_URL } from './constants';
-import { SubstackNotePayload, SubstackPostPayload, ExtensionMessage } from './types';
-
-declare var chrome: any;
+// background.js - Service Worker for Manifest V3
+import { SUBSTACK_API_URL, SUBSTACK_POSTS_URL } from './constants.js';
 
 chrome.runtime.onInstalled.addListener(() => {
   console.log('Substack Notes Composer Extension installed successfully.');
 });
 
-chrome.runtime.onMessage.addListener((request: ExtensionMessage, sender: any, sendResponse: any) => {
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'PUBLISH_NOTE') {
     handleRequest(SUBSTACK_API_URL, request.payload)
       .then(response => sendResponse(response))
       .catch(error => sendResponse({ success: false, error: error.message }));
-    
-    // Return true to indicate we wish to send a response asynchronously
-    return true; 
+    return true; // Async response
   }
   
   if (request.type === 'PUBLISH_POST') {
     handleRequest(SUBSTACK_POSTS_URL, request.payload)
       .then(response => sendResponse(response))
       .catch(error => sendResponse({ success: false, error: error.message }));
-    
-    // Return true to indicate we wish to send a response asynchronously
-    return true; 
+    return true; // Async response
   }
 });
 
-async function handleRequest(url: string, payload: SubstackNotePayload | SubstackPostPayload) {
+async function handleRequest(url, payload) {
   try {
-    // The Service Worker context handles CORS and Cookies more reliably with host_permissions
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // 'Origin': 'https://substack.com' // Browsers often block setting this manually, but host_permissions helps.
       },
-      credentials: 'include', // Crucial: Sends the user's Substack cookies
+      credentials: 'include', // Sends Substack cookies
       body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
-        // Try to parse error message from JSON, fallback to status text
         const errorData = await response.json().catch(() => ({}));
-        
         return { 
             success: false, 
             status: response.status,
@@ -55,7 +44,7 @@ async function handleRequest(url: string, payload: SubstackNotePayload | Substac
     const data = await response.json().catch(() => ({ status: 'ok' }));
     return { success: true, data };
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Background fetch error:', error);
     return { 
       success: false, 
@@ -63,5 +52,3 @@ async function handleRequest(url: string, payload: SubstackNotePayload | Substac
     };
   }
 }
-
-export {};
